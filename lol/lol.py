@@ -4,7 +4,7 @@
 
 import numpy as np
 
-from sklearn.utils import check_array
+from sklearn.utils import check_X_y, check_array
 from sklearn.utils.validation import check_is_fitted
 
 
@@ -69,13 +69,14 @@ class LOL():
         return self
 
     def _fit(self, X, y):
-        X = check_array(
-            X, dtype=[np.float64, np.float32], ensure_2d=True, copy=self.copy)
+        X, y = check_X_y(
+            X, y, dtype=[np.float64, np.float32], ensure_2d=True, copy=self.copy,
+            y_numeric=True)
 
         n_samples, n_features = X.shape
         self.classes_, self.priors_ = np.unique(y, return_counts=True)
         self.priors_ /= n_samples
-        
+
         # Handle n_components==None
         if self.n_components is None:
             n_components = X.shape[1]
@@ -90,6 +91,14 @@ class LOL():
             X[rdx] -= mu
             self.mean_[idx] = mu
 
+        delta = _get_delta(self.mean_, self.priors_)
+
+    def _get_delta(self, mean, priors):
+        _, idx = np.unique(priors, return_index=True)
+        delta = mean.copy()
+        delta[1:] -= delta[0]
+
+        return delta
 
     def fit_transform(self, X, y=None):
         """Fit the model with X and apply the dimensionality reduction on X.
