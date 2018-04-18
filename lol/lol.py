@@ -7,8 +7,31 @@ import numpy as np
 from sklearn.utils import check_X_y, check_array
 from sklearn.utils.validation import check_is_fitted
 
+from sklearn.base import BaseEstimator
 
-class LOL():
+
+def _class_means(X, y):
+    """Compute class means.
+    Parameters
+    ----------
+    X : array-like, shape (n_samples, n_features)
+        Input data.
+    y : array-like, shape (n_samples,)
+        Input labels.
+    Returns
+    -------
+    means : array-like, shape (n_features,)
+        Class means.
+    """
+    means = []
+    classes = np.unique(y)
+    for group in classes:
+        Xg = X[y == group, :]
+        means.append(Xg.mean(0))
+    return np.asarray(means)
+
+
+class LOL(BaseEstimator):
     """
     Linear Optimal Low-Rank Projection (LOL)
 
@@ -34,6 +57,9 @@ class LOL():
     
     classes_ : array-like, shape (n_classes,)
         Unique class labels.
+
+    priors_ : array-like, shape (n_classes,)
+        Class priors (sum to 1).
     """
 
     def __init__(self,
@@ -70,37 +96,57 @@ class LOL():
 
     def _fit(self, X, y):
         X, y = check_X_y(
-            X, y, dtype=[np.float64, np.float32], ensure_2d=True, copy=self.copy,
+            X,
+            y,
+            dtype=[np.float64, np.float32],
+            ensure_2d=True,
+            copy=self.copy,
             y_numeric=True)
 
         n_samples, n_features = X.shape
         self.classes_, self.priors_ = np.unique(y, return_counts=True)
-        self.priors_ /= n_samples
+        self.priors_ = self.priors_ / n_samples
 
         # Handle n_components==None
         if self.n_components is None:
-            n_components = X.shape[1]
+            n_components = X.shape[1] - len(self.classes_)
         else:
-            n_components = self.n_components
+            n_components = self.n_components - len(self.classes_)
+
+        # Get class means
+        self.means_ = _class_means(X, y)
 
         # Center the data
-        self.mean_ = np.empty((len(classes), n_features)
-        for idx, k in enumerate(classes):
-            rdx = y == k
-            mu = np.mean(X[rdx], axis=0)
-            X[rdx] -= mu
-            self.mean_[idx] = mu
+        Xc = []
+        for idx, group in enumerate(self.classes_):
+            Xg = X[y == group, :]
+            Xc.append(Xg - self.means_[idx])
 
-        delta = _get_delta(self.mean_, self.priors_)
+        Xc = np.concatenate(Xc, axis=0)
 
-    def _get_delta(self, mean, priors):
+        self.Xc = Xc
+        delta = self._get_delta(self.means_, self.priors_)
+        #self.delta_ = delta
+
+        U, D, V = np.linalg.svd(Xc, full_matrices=False)
+        V = V.T
+
+        A = np.concatenate([delta.T, -V[:, :n_components]], axis=1)
+
+        # Orthognalize and normalize
+        Q, _ = np.linalg.qr(A)
+
+        self.components_ = Q.T
+
+    def _get_delta(self, means, priors):
         _, idx = np.unique(priors, return_index=True)
-        delta = mean.copy()
+        idx = idx[::-1]
+        delta = means.copy()[idx]
         delta[1:] -= delta[0]
 
         return delta
 
-    def fit_transform(self, X, y=None):
+    def fit_transform(self, X, y):
         """Fit the model with X and apply the dimensionality reduction on X.
         Parameters
         ----------
@@ -116,7 +162,8 @@ class LOL():
         -------
         X_new : array-like, shape (n_samples, n_components)
         """
-        pass
+        self._fit(X, y)
+        return X @ self.components_.T
 
     def transform(self, X):
         """Apply dimensionality reduction to X.
