@@ -62,15 +62,9 @@ class LOL(BaseEstimator):
         Class priors (sum to 1).
     """
 
-    def __init__(self,
-                 n_components=None,
-                 copy=True,
-                 tol=0.0,
-                 random_state=None):
-
+    def __init__(self, n_components=None, copy=True, random_state=None):
         self.n_components = n_components
         self.copy = copy
-        self.tol = tol
         self.random_state = random_state
 
     def fit(self, X, y):
@@ -129,9 +123,10 @@ class LOL(BaseEstimator):
         #self.delta_ = delta
 
         U, D, V = np.linalg.svd(Xc, full_matrices=False)
-        V = V.T
+        U, V = svd_flip(U, V, u_based_decision=False)
 
-        A = np.concatenate([delta.T, -V[:, :n_components]], axis=1)
+        # Transpose the V before taking its components
+        A = np.concatenate([delta.T, V.T[:, :n_components]], axis=1)
 
         # Orthognalize and normalize
         Q, _ = np.linalg.qr(A)
@@ -163,8 +158,14 @@ class LOL(BaseEstimator):
         -------
         X_new : array-like, shape (n_samples, n_components)
         """
-        self._fit(X, y)
-        return X @ self.components_.T
+        try:
+            X_new = X @ self.components_.T
+            return X_new
+
+        except AttributeError:
+            self._fit(X, y)
+            X_new = X @ self.components_.T
+            return X_new
 
     def transform(self, X):
         """Apply dimensionality reduction to X.
