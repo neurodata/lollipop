@@ -104,8 +104,8 @@ class LOL(BaseEstimator):
             y_numeric=True)
 
         n_samples, n_features = X.shape
-        self.classes_, self.priors_ = np.unique(y, return_counts=True)
-        self.priors_ = self.priors_ / n_samples
+        self.classes_, priors_ = np.unique(y, return_counts=True)
+        self.priors_ = priors_ / n_samples
 
         # Handle n_components==None
         if self.n_components is None:
@@ -148,6 +148,7 @@ class LOL(BaseEstimator):
 
     def fit_transform(self, X, y):
         """Fit the model with X and apply the dimensionality reduction on X.
+
         Parameters
         ----------
         X : array-like, shape (n_samples, n_features)
@@ -190,12 +191,9 @@ class LOL(BaseEstimator):
         IncrementalPCA(batch_size=3, copy=True, n_components=2, whiten=False)
         >>> ipca.transform(X) # doctest: +SKIP
         """
-        check_is_fitted(self, ['mean_', 'components_'], all_or_any=all)
+        check_is_fitted(self, ['components_'], all_or_any=all)
 
         X = check_array(X)
-
-        if self.mean_ is not None:
-            X = X - self.mean_
 
         X_transformed = np.dot(X, self.components_.T)
 
