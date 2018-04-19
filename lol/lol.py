@@ -4,10 +4,9 @@
 
 import numpy as np
 
+from sklearn.base import BaseEstimator, BaseTransformer
 from sklearn.utils import check_X_y, check_array
 from sklearn.utils.validation import check_is_fitted
-
-from sklearn.base import BaseEstimator
 
 
 def _class_means(X, y):
@@ -31,7 +30,7 @@ def _class_means(X, y):
     return np.asarray(means)
 
 
-class LOL(BaseEstimator):
+class LOL(BaseEstimator, BaseTransformer):
     """
     Linear Optimal Low-Rank Projection (LOL)
 
@@ -89,6 +88,7 @@ class LOL(BaseEstimator):
         return self
 
     def _fit(self, X, y):
+        """Dispatch to the right submethod depending data shape."""
         X, y = check_X_y(
             X,
             y,
@@ -110,17 +110,15 @@ class LOL(BaseEstimator):
         # Get class means
         self.means_ = _class_means(X, y)
 
-        # Center the data
+        # Center the data on class means
         Xc = []
         for idx, group in enumerate(self.classes_):
             Xg = X[y == group, :]
             Xc.append(Xg - self.means_[idx])
-
         Xc = np.concatenate(Xc, axis=0)
 
-        self.Xc = Xc
+        # Compute difference of means in classes
         delta = self._get_delta(self.means_, self.priors_)
-        #self.delta_ = delta
 
         U, D, V = np.linalg.svd(Xc, full_matrices=False)
         U, V = svd_flip(U, V, u_based_decision=False)
@@ -133,7 +131,16 @@ class LOL(BaseEstimator):
 
         self.components_ = Q.T
 
+    def _fit_full(self, X, y, n_components):
+        pass
+
+    def _fit_truncated(self, X, y, n_components):
+        pass
+
     def _get_delta(self, means, priors):
+        """
+        Computes the difference of class means in decreasing priors order.
+        """
         _, idx = np.unique(priors, return_index=True)
         idx = idx[::-1]
         delta = means.copy()[idx]
@@ -185,12 +192,13 @@ class LOL(BaseEstimator):
         Examples
         --------
         >>> import numpy as np
-        >>> from sklearn.decomposition import IncrementalPCA
+        >>> from lol import LOL
         >>> X = np.array([[-1, -1], [-2, -1], [-3, -2], [1, 1], [2, 1], [3, 2]])
-        >>> ipca = IncrementalPCA(n_components=2, batch_size=3)
-        >>> ipca.fit(X)
-        IncrementalPCA(batch_size=3, copy=True, n_components=2, whiten=False)
-        >>> ipca.transform(X) # doctest: +SKIP
+        >>> Y = np.array()
+        >>> lol = LOL(n_components=2)
+        >>> lol.fit(X)
+        LOL(copy=True, n_components=2)
+        >>> lol.transform(X) # doctest: +SKIP
         """
         check_is_fitted(self, ['components_'], all_or_any=all)
 
