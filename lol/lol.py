@@ -5,19 +5,21 @@
 import numpy as np
 
 from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.utils import check_X_y, check_array
+from sklearn.utils import check_X_y, check_array, check_random_state
 from sklearn.utils.validation import check_is_fitted
-from sklearn.utils.extmath import svd_flip
+from sklearn.utils.extmath import svd_flip, randomized_svd
 
 
 def _class_means(X, y):
     """Compute class means.
+     
     Parameters
     ----------
     X : array-like, shape (n_samples, n_features)
         Input data.
     y : array-like, shape (n_samples,)
         Input labels.
+
     Returns
     -------
     means : array-like, shape (n_features,)
@@ -64,6 +66,10 @@ class LOL(BaseEstimator, TransformerMixin):
         randomized :
             run randomized SVD by the method of Halko et al.
 
+    iterated_power : int >= 0, or 'auto', (default 'auto')
+        Number of iterations for the power method computed by
+        svd_solver == 'randomized'.
+
     random_state : int, RandomState instance or None, optional (default None)
         If int, random_state is the seed used by the random number generator;
         If RandomState instance, random_state is the random number generator;
@@ -90,11 +96,13 @@ class LOL(BaseEstimator, TransformerMixin):
                  n_components=None,
                  copy=True,
                  svd_solver='auto',
-                 random_state=None):
+                 random_state=None,
+                 iterated_power='auto'):
         self.n_components = n_components
         self.copy = copy
         self.svd_solver = svd_solver
         self.random_state = random_state
+        self.iterated_power = iterated_power
 
     def fit(self, X, y):
         """Fit the model with X and y.
@@ -127,15 +135,77 @@ class LOL(BaseEstimator, TransformerMixin):
             copy=self.copy,
             y_numeric=True)
 
-        n_samples, n_features = X.shape
         self.classes_, priors_ = np.unique(y, return_counts=True)
-        self.priors_ = priors_ / n_samples
+        self.priors_ = priors_ / X.shape[0]
 
         # Handle n_components==None
         if self.n_components is None:
             n_components = X.shape[1] - len(self.classes_)
         else:
             n_components = self.n_components - len(self.classes_)
+
+        # Handle svd_solver
+        svd_solver = self.svd_solver
+
+        if svd_solver == 'auto':
+            # Small problem, just call full PCA
+            if max(X.shape) <= 500:
+                svd_solver = 'full'
+            elif n_components >= 1 and n_components < .8 * min(X.shape):
+                svd_solver = 'randomized'
+            # This is also the case of n_components in (0,1)
+            else:
+                svd_solver = 'full'
+
+        # Call different fits for either full or truncated SVD
+        if svd_solver == 'full':
+            return self._fit_full(X, y, n_components)
+        elif svd_solver == 'randomized':
+            return self._fit_truncated(X, y, n_components)
+        else:
+            raise ValueError("Unrecognized svd_solver='{0}'"
+                             "".format(svd_solver))
+
+    def _fit_full(self, X, y, n_components):
+        """Fit the model by computing full SVD on X"""
+        n_samples, n_features = X.shape
+
+        # Compute class means
+        self.means_ = _class_means(X, y)
+
+        # Center the data on class means
+        Xc = []
+        for idx, group in enumerate(self.classes_):
+            Xg = X[y == group, :]
+            Xc.append(Xg - self.means_[idx])
+        Xc = np.concatenate(Xc, axis=0)
+
+        # Compute difference of means in classes
+        delta = self._get_delta(self.means_, self.priors_)
+
+        U, D, V = np.linalg.svd(Xc, full_matrices=False)
+        #U, V = svd_flip(U, V, u_based_decision=False)
+
+        # Transpose the V before taking its components
+        A = np.concatenate([delta.T, V.T[:, :n_components]], axis=1)
+
+        # Orthognalize and normalize
+        Q, _ = np.linalg.qr(A)
+
+        self.components_ = Q.T
+
+        return U, D, V
+
+    def _fit_truncated(self, X, y, n_components):
+        """Fir the model by computing truncated SVD on X"""
+        random_state = check_random_state(self.random_state)
+
+        n_samples, n_features = X.shape
+
+        if not 1 <= n_components <= n_features:
+            raise ValueError("n_components=%r must be between 1 and "
+                             "n_features=%r with svd_solver='randomized'" %
+                             (n_components, n_features))
 
         # Get class means
         self.means_ = _class_means(X, y)
@@ -150,8 +220,12 @@ class LOL(BaseEstimator, TransformerMixin):
         # Compute difference of means in classes
         delta = self._get_delta(self.means_, self.priors_)
 
-        U, D, V = np.linalg.svd(Xc, full_matrices=False)
-        U, V = svd_flip(U, V, u_based_decision=False)
+        U, D, V = randomized_svd(
+            X,
+            n_components=n_components,
+            n_iter=self.iterated_power,
+            flip_sign=True,
+            random_state=random_state)
 
         # Transpose the V before taking its components
         A = np.concatenate([delta.T, V.T[:, :n_components]], axis=1)
@@ -161,11 +235,7 @@ class LOL(BaseEstimator, TransformerMixin):
 
         self.components_ = Q.T
 
-    def _fit_full(self, X, y, n_components):
-        pass
-
-    def _fit_truncated(self, X, y, n_components):
-        pass
+        return U, D, V
 
     def _get_delta(self, means, priors):
         """
