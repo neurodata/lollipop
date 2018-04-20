@@ -4,9 +4,10 @@
 
 import numpy as np
 
-from sklearn.base import BaseEstimator, BaseTransformer
+from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils import check_X_y, check_array
 from sklearn.utils.validation import check_is_fitted
+from sklearn.utils.extmath import svd_flip
 
 
 def _class_means(X, y):
@@ -30,7 +31,7 @@ def _class_means(X, y):
     return np.asarray(means)
 
 
-class LOL(BaseEstimator, BaseTransformer):
+class LOL(BaseEstimator, TransformerMixin):
     """
     Linear Optimal Low-Rank Projection (LOL)
 
@@ -49,6 +50,26 @@ class LOL(BaseEstimator, BaseTransformer):
         fit(X).transform(X) will not yield the expected results,
         use fit_transform(X) instead.
 
+    svd_solver : string {'auto', 'full', 'randomized'}
+        auto :
+            the solver is selected by a default policy based on `X.shape` and
+            `n_components`: if the input data is larger than 500x500 and the
+            number of components to extract is lower than 80% of the smallest
+            dimension of the data, then the more efficient 'randomized'
+            method is enabled. Otherwise the exact full SVD is computed and
+            optionally truncated afterwards.
+        full :
+            run exact full SVD calling the standard LAPACK solver via
+            `scipy.linalg.svd`
+        randomized :
+            run randomized SVD by the method of Halko et al.
+
+    random_state : int, RandomState instance or None, optional (default None)
+        If int, random_state is the seed used by the random number generator;
+        If RandomState instance, random_state is the random number generator;
+        If None, the random number generator is the RandomState instance used
+        by `np.random`. Used when ``svd_solver`` == 'randomized'.
+
     Attributes
     ----------
     means_ : array-like, shape (n_classes, n_features)
@@ -59,11 +80,20 @@ class LOL(BaseEstimator, BaseTransformer):
 
     priors_ : array-like, shape (n_classes,)
         Class priors (sum to 1).
+
+    n_components_ : int
+        Equals the parameter n_components, or n_features if n_components 
+        is None.
     """
 
-    def __init__(self, n_components=None, copy=True, random_state=None):
+    def __init__(self,
+                 n_components=None,
+                 copy=True,
+                 svd_solver='auto',
+                 random_state=None):
         self.n_components = n_components
         self.copy = copy
+        self.svd_solver = svd_solver
         self.random_state = random_state
 
     def fit(self, X, y):
