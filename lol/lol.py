@@ -495,14 +495,11 @@ class QOQ(BaseEstimator, TransformerMixin):
         delta = self._get_delta(self.means_, self.priors_)
 
         # Initialize arrays for singular values and vectors
-        D = np.empty((n_components * len(self.classes_)))
-        V = np.empty((n_features, n_components * len(self.classes_)))
+        D = []
+        V = []
 
         # Compute SVD on class conditional data
         for idx, k in enumerate(self.classes_):
-            fdx = n_components * idx
-            ldx = n_components * (idx + 1)
-
             # Center class conditional data
             Xc = X[y == k]
             Xc -= Xc.mean(axis=0)
@@ -510,8 +507,11 @@ class QOQ(BaseEstimator, TransformerMixin):
             # Compute SVD
             _, D_, V_ = np.linalg.svd(Xc, full_matrices=False)
 
-            D[fdx:ldx] = D_[:n_components]
-            V[:, fdx:ldx] = V_.T[:, :n_components]
+            D.append(D_[:n_components])
+            V.append(V_.T[:, :n_components])
+
+        D = np.concatenate(D)
+        V = np.concatenate(V, axis=1)
 
         idx = np.argsort(D)[::-1][:n_components]
         A = V[:, idx]
@@ -544,14 +544,11 @@ class QOQ(BaseEstimator, TransformerMixin):
         delta = self._get_delta(self.means_, self.priors_)
 
         # Initialize arrays for singular values and vectors
-        D = np.empty((n_components * len(self.classes_)))
-        V = np.empty((n_features, n_components * len(self.classes_)))
+        D = []
+        V = []
 
         # Compute SVD on class conditional data
         for idx, k in enumerate(self.classes_):
-            fdx = n_components * idx
-            ldx = n_components * (idx + 1)
-
             # Center class conditional data
             Xc = X[y == k]
             Xc -= Xc.mean(axis=0)
@@ -564,8 +561,11 @@ class QOQ(BaseEstimator, TransformerMixin):
                 flip_sign=True,
                 random_state=random_state)
 
-            D[fdx:ldx] = D_[:n_components]
-            V[:, fdx:ldx] = V_.T[:, :n_components]
+            D.append(D_[:n_components])
+            V.append(V_.T[:, :n_components])
+
+        D = np.concatenate(D)
+        V = np.concatenate(V, axis=1)
 
         idx = np.argsort(D)[::-1][:n_components]
         A = V[:, idx]
