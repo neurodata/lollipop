@@ -466,6 +466,8 @@ class QOQ(BaseEstimator, TransformerMixin):
                              "".format(svd_solver))
 
     def _fit_means(self, X, y):
+        """Fit the model by only computing the means when
+        n_components < num_classes"""
         n_samples, n_features = X.shape
 
         # Compute class means
