@@ -14,15 +14,25 @@ For R implmentation, please [here](https://github.com/neurodata/lol).
 # System Requirements
 
 ## Hardware Requirements
-TODO
+- **lolPy** package requires only a standard computer with enough RAM to support the in-memory operations.
+- Requires no non-standard hardware to run.
 
 ## Software Requirements
-TODO
-
-### OS Requirements
-TODO
+- **lolPy** was developed in Python 3.6. Currently, there is no plan to support Python 2.
+- Was developed and tested primarily on Mac OS (Sierra 10.12.6).
+- **lolPy** package should be compatible with Windows, Mac, and Linux operating systems.
+- **lolPy** is robust to Python package versions as it only requires the following packages:
+```
+numpy
+scikit-learn
+scipy
+```
 
 # Installation Guide
 
 ## Stable Release
 `lolPy` will be available on PyPi soon. Stay tuned.
+
+# Demo
+
+TODO
