@@ -158,13 +158,33 @@ class LOL(BaseEstimator, TransformerMixin):
                 svd_solver = 'full'
 
         # Call different fits for either full or truncated SVD
-        if svd_solver == 'full':
+        # Only compute deltas if self.n_components < self.classes_
+        if n_components <= 0:
+            return self._fit_means(X, y)
+        elif svd_solver == 'full':
             return self._fit_full(X, y, n_components)
         elif svd_solver == 'randomized':
             return self._fit_truncated(X, y, n_components)
         else:
             raise ValueError("Unrecognized svd_solver='{0}'"
                              "".format(svd_solver))
+
+    def _fit_means(self, X, y):
+        n_samples, n_features = X.shape
+
+        # Compute class means
+        self.means_ = _class_means(X, y)
+
+        # Compute difference of means in classes
+        delta = self._get_delta(self.means_, self.priors_)
+
+        A = delta.T[:, :self.n_components]
+
+        Q, _ = np.linalg.qr(A)
+
+        self.components_ = Q.T
+
+        return Q
 
     def _fit_full(self, X, y, n_components):
         """Fit the model by computing full SVD on X"""
