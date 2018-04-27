@@ -7,7 +7,7 @@ install:
   - pip install -r requirements-test.txt
   - pip install coveralls
 script:
-  - coverage run --source=lol setup.py
+  # - coverage run --source=lol setup.py
   - python -m pytest ./lol/tests/test_common.py
 after_success:
   - coveralls
