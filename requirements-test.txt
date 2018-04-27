@@ -1,3 +1,2 @@
-mock
-unittest2
+pytest
 pyyaml
