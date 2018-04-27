@@ -12,10 +12,10 @@ from os import path
 
 here = path.abspath(path.dirname(__file__))
 
-VERSION = '0.0.1'
+VERSION = '0.0.2'
 
 setup(
-    name='lolpy',
+    name='lolP',
     version=VERSION,
     description='Linear Optimal Low Rank Projection',
     url='https://github.com/j1c/lol',
@@ -33,6 +33,6 @@ setup(
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Science/Research',
         'Topic :: Scientific/Engineering :: Visualization',
-        'License :: OSI Approved :: GPL License',
+        'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
         'Programming Language :: Python :: 3.6',
     ])

@@ -1,4 +1,4 @@
-# Linear Optimal Low Rank Projection (lolPy)
+# Linear Optimal Low Rank Projection (lolP)
 
 
 [![arXiv shield](https://img.shields.io/badge/arXiv-1709.01233-red.svg?style=flat)](https://arxiv.org/abs/1709.01233)
@@ -14,14 +14,14 @@ For R implmentation, please [here](https://github.com/neurodata/lol).
 # System Requirements
 
 ## Hardware Requirements
-- **lolPy** package requires only a standard computer with enough RAM to support the in-memory operations.
+- **lolP** package requires only a standard computer with enough RAM to support the in-memory operations.
 - Requires no non-standard hardware to run.
 
 ## Software Requirements
-- **lolPy** was developed in Python 3.6. Currently, there is no plan to support Python 2.
+- **lolP** was developed in Python 3.6. Currently, there is no plan to support Python 2.
 - Was developed and tested primarily on Mac OS (Sierra 10.12.6).
-- **lolPy** package should be compatible with Windows, Mac, and Linux operating systems.
-- **lolPy** is robust to Python package versions as it only requires the following packages:
+- **lolP** package should be compatible with Windows, Mac, and Linux operating systems.
+- **lolP** is robust to Python package versions as it only requires the following packages:
 ```
 numpy
 scikit-learn
@@ -31,8 +31,29 @@ scipy
 # Installation Guide
 
 ## Stable Release
-`lolPy` will be available on PyPi soon. Stay tuned.
+`lolP` is available on PyPi:
+```
+pip install lolP
+```
 
 # Demo
+The **lolP** package offers identical API to that of scikit-learn. Thus, if you have used scikit-learn,
+you will find the usage very familiar. Below is a very simple demo on the usage of **lolP**.
 
-TODO
+```
+from lol import LOL
+import numpy as np
+
+# Generate two random datasets
+
+# 100 samples, 10 dimensions
+X = np.random.rand(100, 10)
+X2 = np.random.rand(100, 10)
+
+# Two classes with equal proportions
+y = np.random.binomial(1, 0.5, size=100)
+
+lmao = LOL(n_components=4, svd_solver='full')
+lmao.fit(X, y)
+X2_transformed = lmao.transform(X2)
+```

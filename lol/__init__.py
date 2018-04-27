@@ -15,3 +15,5 @@
 # 'X.Y.dev0' is the canonical version of 'X.Y.dev'
 #
 __version__ = '0.0a1'
+
+from .lol import *
