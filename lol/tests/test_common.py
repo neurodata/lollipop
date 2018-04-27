@@ -1,5 +1,5 @@
 from sklearn.utils.estimator_checks import check_estimator
-from lol import LOL
+from lol.lol import LOL
 
 
 def test_transformer():
