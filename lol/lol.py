@@ -7,12 +7,12 @@ import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils import check_X_y, check_array, check_random_state
 from sklearn.utils.validation import check_is_fitted
-from sklearn.utils.extmath import svd_flip, randomized_svd
+from sklearn.utils.extmath import randomized_svd
 
 
 def _class_means(X, y):
     """Compute class means.
-     
+
     Parameters
     ----------
     X : array-like, shape (n_samples, n_features)
@@ -37,7 +37,7 @@ class LOL(BaseEstimator, TransformerMixin):
     """
     Linear Optimal Low-Rank Projection (LOL)
 
-    Supervised linear dimensionality reduction using Singular Value 
+    Supervised linear dimensionality reduction using Singular Value
     Decomposition of the data to project it to a lower dimensional space.
 
     Parameters
@@ -88,7 +88,7 @@ class LOL(BaseEstimator, TransformerMixin):
         Class priors (sum to 1).
 
     n_components_ : int
-        Equals the parameter n_components, or n_features if n_components 
+        Equals the parameter n_components, or n_features if n_components
         is None.
     """
 
@@ -170,7 +170,7 @@ class LOL(BaseEstimator, TransformerMixin):
                              "".format(svd_solver))
 
     def _fit_means(self, X, y):
-        n_samples, n_features = X.shape
+        _, n_features = X.shape
 
         # Compute class means
         self.means_ = _class_means(X, y)
