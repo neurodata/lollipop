@@ -1,6 +1,7 @@
 # Linear Optimal Low Rank Projection (lolP)
 
 
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/f38f108d211f43d08f2d229d60de387f)](https://app.codacy.com/app/jaewonc78/lol?utm_source=github.com&utm_medium=referral&utm_content=j1c/lol&utm_campaign=badger)
 [![arXiv shield](https://img.shields.io/badge/arXiv-1709.01233-red.svg?style=flat)](https://arxiv.org/abs/1709.01233)
 [![Build Status](https://travis-ci.org/j1c/lol.svg?branch=master)](https://travis-ci.org/j1c/lol)
 [![codecov](https://codecov.io/gh/j1c/lol/branch/master/graph/badge.svg)](https://codecov.io/gh/j1c/lol)
