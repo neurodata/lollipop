@@ -261,7 +261,8 @@ class LOL(BaseEstimator, TransformerMixin):
         """
         Computes the difference of class means in decreasing priors order.
         """
-        _, idx = np.unique(priors, return_index=True)
+        #_, idx = np.unique(priors, return_index=True)
+        idx = np.argsort(priors)
         idx = idx[::-1]
         delta = means.copy()[idx]
         delta[1:] -= delta[0]
@@ -586,7 +587,8 @@ class QOQ(BaseEstimator, TransformerMixin):
         """
         Computes the difference of class means in decreasing priors order.
         """
-        _, idx = np.unique(priors, return_index=True)
+        #_, idx = np.unique(priors, return_index=True)
+        idx = np.argsort(priors)
         idx = idx[::-1]
         delta = means.copy()[idx]
         delta[1:] -= delta[0]
