@@ -335,12 +335,12 @@ class LOL(BaseEstimator, TransformerMixin):
         X_new : array-like, shape (n_samples, n_components)
         """
         try:
-            X_new = X @ self.components_.T
+            X_new = np.dot(X, self.components_.T)
             return X_new
 
         except AttributeError:
             self._fit(X, y)
-            X_new = X @ self.components_.T
+            X_new = np.dot(X, self.components_.T)
             return X_new
 
     def transform(self, X):
@@ -670,12 +670,12 @@ class QOQ(BaseEstimator, TransformerMixin):
         X_new : array-like, shape (n_samples, n_components)
         """
         try:
-            X_new = X @ self.components_.T
+            X_new = np.dot(X, self.components_.T)
             return X_new
 
         except AttributeError:
             self._fit(X, y)
-            X_new = X @ self.components_.T
+            X_new = np.dot(X, self.components_.T)
             return X_new
 
     def transform(self, X):
