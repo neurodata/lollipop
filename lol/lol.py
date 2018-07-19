@@ -78,7 +78,8 @@ class LOL(BaseEstimator, TransformerMixin):
     Parameters
     ----------
     n_components : int, float, None or string
-        Number of components to keep.
+        Number of components to keep. For best proformance, ensure that
+        n_components >= n_classes.
         if n_components is not set all components are kept::
             n_components == min(n_samples, n_features)
 
@@ -124,6 +125,10 @@ class LOL(BaseEstimator, TransformerMixin):
 
     priors_ : array-like, shape (n_classes,)
         Class priors (sum to 1).
+
+    delta_ : array-like, shape (n_classes - 1, n_features)
+        Difference of means computed by ordering the class means from largest
+        to smallest class priors.
 
     n_components_ : int
         Equals the parameter n_components, or n_features if n_components
@@ -218,6 +223,8 @@ class LOL(BaseEstimator, TransformerMixin):
 
         # Compute difference of means in classes
         delta = _get_delta(self.means_, self.priors_)
+        self.delta_ = delta
+
         A = delta.T[:, :self.n_components]
 
         # Handle orthogonalize
@@ -245,6 +252,7 @@ class LOL(BaseEstimator, TransformerMixin):
 
         # Compute difference of means in classes
         delta = _get_delta(self.means_, self.priors_)
+        self.delta_ = delta
 
         U, D, V = np.linalg.svd(Xc, full_matrices=False)
         # U, V = svd_flip(U, V, u_based_decision=False)
@@ -286,6 +294,7 @@ class LOL(BaseEstimator, TransformerMixin):
 
         # Compute difference of means in classes
         delta = _get_delta(self.means_, self.priors_)
+        self.delta_ = delta
 
         U, D, V = randomized_svd(
             X,
@@ -362,7 +371,6 @@ class LOL(BaseEstimator, TransformerMixin):
         >>> lol.transform(X) # doctest: +SKIP
         """
         check_is_fitted(self, ['components_'], all_or_any=all)
-
         X = check_array(X)
 
         X_transformed = np.dot(X, self.components_.T)
@@ -380,7 +388,8 @@ class QOQ(BaseEstimator, TransformerMixin):
     Parameters
     ----------
     n_components : int, float, None or string
-        Number of components to keep.
+        Number of components to keep. For best proformance, ensure that
+        n_components >= n_classes.
         if n_components is not set all components are kept::
             n_components == min(n_samples, n_features)
 
@@ -426,6 +435,10 @@ class QOQ(BaseEstimator, TransformerMixin):
 
     priors_ : array-like, shape (n_classes,)
         Class priors (sum to 1).
+
+    delta_ : array-like, shape (n_classes - 1, n_features)
+        Difference of means computed by ordering the class means from largest
+        to smallest class priors.
 
     n_components_ : int
         Equals the parameter n_components, or n_features if n_components
@@ -522,7 +535,7 @@ class QOQ(BaseEstimator, TransformerMixin):
 
         # Compute difference of means in classes
         delta = _get_delta(self.means_, self.priors_)
-
+        self.delta_ = delta
         # Get projection components
         A = delta.T[:, :self.n_components]
 
@@ -544,6 +557,7 @@ class QOQ(BaseEstimator, TransformerMixin):
 
         # Compute difference of means in classes
         delta = _get_delta(self.means_, self.priors_)
+        self.delta_ = delta
 
         # Initialize arrays for singular values and vectors
         D = []
@@ -574,10 +588,8 @@ class QOQ(BaseEstimator, TransformerMixin):
         if self.orthogonalize:
             Q, _ = np.linalg.qr(A)
             self.components_ = Q.T
-            return Q
         else:
             self.components_ = A.T
-            return A.T
 
         return _, D, V
 
@@ -597,6 +609,7 @@ class QOQ(BaseEstimator, TransformerMixin):
 
         # Compute difference of means in classes
         delta = _get_delta(self.means_, self.priors_)
+        self.delta_ = delta
 
         # Initialize arrays for singular values and vectors
         D = []
