@@ -6,8 +6,8 @@ from lol.lol import LOL
 
 def test_LOL():
     X = np.random.random((100, 10))
-    y = np.random.randint(0, 1, 100)
-    l = LOL(n_components=2)
-    l.fit(X, y)
-    l.transform(X)
-    l.fit_transform(X, y)
+    y = np.random.randint(0, 2, 100)
+    lmao = LOL(n_components=3)
+    lmao.fit(X, y)
+    lmao.transform(X)
+    lmao.fit_transform(X, y)
