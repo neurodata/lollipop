@@ -1,8 +1,8 @@
-# Linear Optimal Low Rank Projection (lolP)
+# Linear Optimal Low Rank Projection (lollipop :lollipop:)
 
 
 [![arXiv shield](https://img.shields.io/badge/arXiv-1709.01233-red.svg?style=flat)](https://arxiv.org/abs/1709.01233)
-[![Build Status](https://travis-ci.org/j1c/lol.svg?branch=master)](https://travis-ci.org/neurodata/lollipop)
+[![Build Status](https://travis-ci.org/j1c/lol.svg?branch=master)](https://travis-ci.org/neurodata/lollipop.svg?branch=master)
 
 # Overview
 
