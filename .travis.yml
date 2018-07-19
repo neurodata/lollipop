@@ -9,6 +9,6 @@ install:
   - pip install coveralls
 script:
   # - coverage run --source=lol setup.py
-  - python -m pytest ./lol/tests/test.py
+  - python -m pytest ./lol/tests/tests.py
 after_success:
   - coveralls
