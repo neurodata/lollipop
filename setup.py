@@ -18,10 +18,10 @@ setup(
     name='lolP',
     version=VERSION,
     description='Linear Optimal Low Rank Projection',
-    url='https://github.com/j1c/lol',
+    url='https://github.com/neurodata/lollipop',
     author='Jaewon Chung',
     author_email='j1c@jhu.edu',
-    license='GPL',
+    license='Apache License 2.0',
     keywords='dimensionality reduction',
     packages=['lol'],  # Required
     install_requires=['scipy>=1.0.0', 'scikit-learn==0.19.1', 'numpy>=1.14.2'],
@@ -33,6 +33,6 @@ setup(
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Science/Research',
         'Topic :: Scientific/Engineering :: Visualization',
-        'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
+        'License :: OSI Approved :: Apache Software License',
         'Programming Language :: Python :: 3.6',
     ])
