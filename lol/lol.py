@@ -22,7 +22,7 @@ def _class_means(X, y):
 
     Returns
     -------
-    means : array-like, shape (n_features,)
+    means : array-like, shape (n_classes, n_features)
         Class means.
     """
     means = []
@@ -31,6 +31,41 @@ def _class_means(X, y):
         Xg = X[y == group, :]
         means.append(Xg.mean(0))
     return np.asarray(means)
+
+
+def _get_delta(means, priors):
+    """
+    Computes the difference of class means in decreasing priors order.
+
+    Parameters
+    ----------
+    means : array-like, shape (n_classes, n_features)
+        Class means
+    priors : array-like, shape (n_classes,)
+        Proportion of class in dataset
+
+    Returns
+    -------
+    delta : array-like, shape (n_classes - 1, n_features)
+        Difference of means where the mean with largest prior (reference mean)
+        is subtracted from all the other means. Reference mean is not returned.
+    """
+    # Shuffle the indices to deal with ties
+    idx = np.arange(len(priors), dtype=np.int64)
+    np.random.shuffle(idx)
+
+    # Reorder based on shuffled idx
+    priors = priors[idx]
+    means = means[idx]
+
+    # Compute deltas based on increasing to decreasing priors
+    sorted_idx = np.argsort(priors)[::-1]
+    delta = means[sorted_idx]
+    delta[1:] -= delta[0]
+
+    # Discard first means since it is reference mean used to
+    # subtract from other means
+    return delta[1:]
 
 
 class LOL(BaseEstimator, TransformerMixin):
@@ -66,6 +101,9 @@ class LOL(BaseEstimator, TransformerMixin):
         randomized :
             run randomized SVD by the method of Halko et al.
 
+    orthogonalize : bool (default False)
+        If True, the components are orthogonalized.
+
     iterated_power : int >= 0, or 'auto', (default 'auto')
         Number of iterations for the power method computed by
         svd_solver == 'randomized'.
@@ -80,7 +118,7 @@ class LOL(BaseEstimator, TransformerMixin):
     ----------
     means_ : array-like, shape (n_classes, n_features)
         Class means.
-    
+
     classes_ : array-like, shape (n_classes,)
         Unique class labels.
 
@@ -96,11 +134,13 @@ class LOL(BaseEstimator, TransformerMixin):
                  n_components=None,
                  copy=True,
                  svd_solver='auto',
+                 orthogonalize=False,
                  random_state=None,
                  iterated_power='auto'):
         self.n_components = n_components
         self.copy = copy
         self.svd_solver = svd_solver
+        self.orthogonalize = orthogonalize
         self.random_state = random_state
         self.iterated_power = iterated_power
 
@@ -158,7 +198,8 @@ class LOL(BaseEstimator, TransformerMixin):
                 svd_solver = 'full'
 
         # Call different fits for either full or truncated SVD
-        # Only compute deltas if self.n_components < self.classes_ for efficiency
+        # Only compute deltas if self.n_components < self.classes_
+        # for efficiency
         if n_components <= 0:
             return self._fit_means(X, y)
         elif svd_solver == 'full':
@@ -176,15 +217,17 @@ class LOL(BaseEstimator, TransformerMixin):
         self.means_ = _class_means(X, y)
 
         # Compute difference of means in classes
-        delta = self._get_delta(self.means_, self.priors_)
-
+        delta = _get_delta(self.means_, self.priors_)
         A = delta.T[:, :self.n_components]
 
-        Q, _ = np.linalg.qr(A)
-
-        self.components_ = Q.T
-
-        return Q
+        # Handle orthogonalize
+        if self.orthogonalize:
+            Q, _ = np.linalg.qr(A)
+            self.components_ = Q.T
+            return Q
+        else:
+            self.components_ = A.T
+            return A.T
 
     def _fit_full(self, X, y, n_components):
         """Fit the model by computing full SVD on X"""
@@ -201,18 +244,22 @@ class LOL(BaseEstimator, TransformerMixin):
         Xc = np.concatenate(Xc, axis=0)
 
         # Compute difference of means in classes
-        delta = self._get_delta(self.means_, self.priors_)
+        delta = _get_delta(self.means_, self.priors_)
 
         U, D, V = np.linalg.svd(Xc, full_matrices=False)
-        #U, V = svd_flip(U, V, u_based_decision=False)
+        # U, V = svd_flip(U, V, u_based_decision=False)
 
         # Transpose the V before taking its components
         A = np.concatenate([delta.T, V.T[:, :n_components]], axis=1)
 
-        # Orthognalize and normalize
-        Q, _ = np.linalg.qr(A)
-
-        self.components_ = Q.T
+        # Handle orthogonalize
+        if self.orthogonalize:
+            Q, _ = np.linalg.qr(A)
+            self.components_ = Q.T
+            return Q
+        else:
+            self.components_ = A.T
+            return A.T
 
         return U, D, V
 
@@ -238,7 +285,7 @@ class LOL(BaseEstimator, TransformerMixin):
         Xc = np.concatenate(Xc, axis=0)
 
         # Compute difference of means in classes
-        delta = self._get_delta(self.means_, self.priors_)
+        delta = _get_delta(self.means_, self.priors_)
 
         U, D, V = randomized_svd(
             X,
@@ -250,24 +297,16 @@ class LOL(BaseEstimator, TransformerMixin):
         # Transpose the V before taking its components
         A = np.concatenate([delta.T, V.T[:, :n_components]], axis=1)
 
-        # Orthognalize and normalize
-        Q, _ = np.linalg.qr(A)
-
-        self.components_ = Q.T
+        # Handle orthogonalize
+        if self.orthogonalize:
+            Q, _ = np.linalg.qr(A)
+            self.components_ = Q.T
+            return Q
+        else:
+            self.components_ = A.T
+            return A.T
 
         return U, D, V
-
-    def _get_delta(self, means, priors):
-        """
-        Computes the difference of class means in decreasing priors order.
-        """
-        #_, idx = np.unique(priors, return_index=True)
-        idx = np.argsort(priors)
-        idx = idx[::-1]
-        delta = means.copy()[idx]
-        delta[1:] -= delta[0]
-
-        return delta
 
     def fit_transform(self, X, y):
         """Fit the model with X and apply the dimensionality reduction on X.
@@ -314,7 +353,8 @@ class LOL(BaseEstimator, TransformerMixin):
         --------
         >>> import numpy as np
         >>> from lol import LOL
-        >>> X = np.array([[-1, -1], [-2, -1], [-3, -2], [1, 1], [2, 1], [3, 2]])
+        >>> X = np.array([[-1, -1], [-2, -1], [-3, -2],
+                          [1, 1], [2, 1], [3, 2]])
         >>> Y = np.array()
         >>> lol = LOL(n_components=2)
         >>> lol.fit(X)
@@ -334,7 +374,7 @@ class QOQ(BaseEstimator, TransformerMixin):
     """
     Quadratic Optimal QDA (QOQ)
 
-    Supervised quadratic dimensionality reduction using Singular Value 
+    Supervised quadratic dimensionality reduction using Singular Value
     Decomposition of the data to project it to a lower dimensional space.
 
     Parameters
@@ -363,6 +403,9 @@ class QOQ(BaseEstimator, TransformerMixin):
         randomized :
             run randomized SVD by the method of Halko et al.
 
+    orthogonalize : bool (default False)
+        If True, the components are orthogonalized.
+
     iterated_power : int >= 0, or 'auto', (default 'auto')
         Number of iterations for the power method computed by
         svd_solver == 'randomized'.
@@ -377,7 +420,7 @@ class QOQ(BaseEstimator, TransformerMixin):
     ----------
     means_ : array-like, shape (n_classes, n_features)
         Class means.
-    
+
     classes_ : array-like, shape (n_classes,)
         Unique class labels.
 
@@ -385,7 +428,7 @@ class QOQ(BaseEstimator, TransformerMixin):
         Class priors (sum to 1).
 
     n_components_ : int
-        Equals the parameter n_components, or n_features if n_components 
+        Equals the parameter n_components, or n_features if n_components
         is None.
     """
 
@@ -393,11 +436,13 @@ class QOQ(BaseEstimator, TransformerMixin):
                  n_components=None,
                  copy=True,
                  svd_solver='auto',
+                 orthogonalize=False,
                  random_state=None,
                  iterated_power='auto'):
         self.n_components = n_components
         self.copy = copy
         self.svd_solver = svd_solver
+        self.orthogonalize = orthogonalize
         self.random_state = random_state
         self.iterated_power = iterated_power
 
@@ -455,7 +500,8 @@ class QOQ(BaseEstimator, TransformerMixin):
                 svd_solver = 'full'
 
         # Call different fits for either full or truncated SVD
-        # Only compute deltas if self.n_components < self.classes_ for efficiency
+        # Only compute deltas if self.n_components < self.classes_
+        # for efficiency
         if n_components <= 0:
             return self._fit_means(X, y)
         elif svd_solver == 'full':
@@ -475,17 +521,19 @@ class QOQ(BaseEstimator, TransformerMixin):
         self.means_ = _class_means(X, y)
 
         # Compute difference of means in classes
-        delta = self._get_delta(self.means_, self.priors_)
+        delta = _get_delta(self.means_, self.priors_)
 
         # Get projection components
         A = delta.T[:, :self.n_components]
 
-        # Orthoganlize and normalize
-        Q, _ = np.linalg.qr(A)
-
-        self.components_ = Q.T
-
-        return A
+        # Handle orthogonalize
+        if self.orthogonalize:
+            Q, _ = np.linalg.qr(A)
+            self.components_ = Q.T
+            return Q
+        else:
+            self.components_ = A.T
+            return A.T
 
     def _fit_full(self, X, y, n_components):
         """Fit the model by computing full SVD on X"""
@@ -495,7 +543,7 @@ class QOQ(BaseEstimator, TransformerMixin):
         self.means_ = _class_means(X, y)
 
         # Compute difference of means in classes
-        delta = self._get_delta(self.means_, self.priors_)
+        delta = _get_delta(self.means_, self.priors_)
 
         # Initialize arrays for singular values and vectors
         D = []
@@ -522,10 +570,14 @@ class QOQ(BaseEstimator, TransformerMixin):
         # Transpose the V before taking its components
         A = np.concatenate([delta.T, A], axis=1)
 
-        # Orthognalize and normalize
-        Q, _ = np.linalg.qr(A)
-
-        self.components_ = Q.T
+        # Handle orthogonalize
+        if self.orthogonalize:
+            Q, _ = np.linalg.qr(A)
+            self.components_ = Q.T
+            return Q
+        else:
+            self.components_ = A.T
+            return A.T
 
         return _, D, V
 
@@ -544,7 +596,7 @@ class QOQ(BaseEstimator, TransformerMixin):
         self.means_ = _class_means(X, y)
 
         # Compute difference of means in classes
-        delta = self._get_delta(self.means_, self.priors_)
+        delta = _get_delta(self.means_, self.priors_)
 
         # Initialize arrays for singular values and vectors
         D = []
@@ -576,24 +628,16 @@ class QOQ(BaseEstimator, TransformerMixin):
         # Transpose the V before taking its components
         A = np.concatenate([delta.T, A], axis=1)
 
-        # Orthognalize and normalize
-        Q, _ = np.linalg.qr(A)
-
-        self.components_ = Q.T
+        # Handle orthogonalize
+        if self.orthogonalize:
+            Q, _ = np.linalg.qr(A)
+            self.components_ = Q.T
+            return Q
+        else:
+            self.components_ = A.T
+            return A.T
 
         return _, D, V
-
-    def _get_delta(self, means, priors):
-        """
-        Computes the difference of class means in decreasing priors order.
-        """
-        #_, idx = np.unique(priors, return_index=True)
-        idx = np.argsort(priors)
-        idx = idx[::-1]
-        delta = means.copy()[idx]
-        delta[1:] -= delta[0]
-
-        return delta
 
     def fit_transform(self, X, y):
         """Fit the model with X and apply the dimensionality reduction on X.
@@ -640,7 +684,8 @@ class QOQ(BaseEstimator, TransformerMixin):
         --------
         >>> import numpy as np
         >>> from lol import LOL
-        >>> X = np.array([[-1, -1], [-2, -1], [-3, -2], [1, 1], [2, 1], [3, 2]])
+        >>> X = np.array([[-1, -1], [-2, -1], [-3, -2],
+                          [1, 1], [2, 1], [3, 2]])
         >>> Y = np.array()
         >>> lol = LOL(n_components=2)
         >>> lol.fit(X)
