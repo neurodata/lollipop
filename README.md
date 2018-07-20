@@ -2,6 +2,9 @@
 
 
 [![arXiv shield](https://img.shields.io/badge/arXiv-1709.01233-red.svg?style=flat)](https://arxiv.org/abs/1709.01233)
+![PyPI](https://img.shields.io/pypi/v/lolp.svg)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/lolp.svg)
+![PyPI - License](https://img.shields.io/pypi/l/lolp.svg)
 [![Build Status](https://travis-ci.org/neurodata/lollipop.svg?branch=master)](https://travis-ci.org/neurodata/lollipop)
 
 # Overview
