@@ -14,8 +14,8 @@
 # Dev branch marker is: 'X.Y.dev' or 'X.Y.devN' where N is an integer.
 # 'X.Y.dev0' is the canonical version of 'X.Y.dev'
 #
-__version__ = '0.0.3'
+__version__ = '0.0.4'
 
 from .lol import LOL, QOQ
 
-__all__ = [LOL, QOQ]
+__all__ = ['LOL', 'QOQ']
