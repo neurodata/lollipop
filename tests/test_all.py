@@ -1,6 +1,8 @@
-import numpy as np
 import pytest
+
+import numpy as np
 from numpy.testing import assert_almost_equal, assert_equal
+
 from lol.lol import LOL
 
 
