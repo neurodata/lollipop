@@ -12,7 +12,7 @@ from os import path
 
 here = path.abspath(path.dirname(__file__))
 
-VERSION = '0.0.3'
+VERSION = '0.0.4'
 
 SCIPY_MIN_VERSION = '0.13.3'
 NUMPY_MIN_VERSION = '1.8.2'
