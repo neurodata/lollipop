@@ -12,10 +12,11 @@ from os import path
 
 here = path.abspath(path.dirname(__file__))
 
-VERSION = '0.0.3'
+VERSION = '0.0.4'
 
 SCIPY_MIN_VERSION = '0.13.3'
 NUMPY_MIN_VERSION = '1.8.2'
+SKLEARN_MIN_VERSION = '0.19.1'
 
 setup(
     name='lolP',
@@ -27,9 +28,12 @@ setup(
     license='Apache License 2.0',
     keywords='dimensionality reduction',
     packages=['lol'],  # Required
+    setup_requires=[
+        'numpy>={}'.format(NUMPY_MIN_VERSION),
+    ],
     install_requires=[
         'scipy>={}'.format(SCIPY_MIN_VERSION),
-        'numpy>={}'.format(NUMPY_MIN_VERSION), 'scikit-learn==0.19.1'
+        'scikit-learn>={}'.format(SKLEARN_MIN_VERSION),
     ],
     classifiers=[  # Optional
         # How mature is this project? Common values are
