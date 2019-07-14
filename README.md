@@ -1,6 +1,6 @@
 # Linear Optimal Low Rank Projection (lollipop :lollipop:)
 
-
+![Downloads shield](https://img.shields.io/pypi/dm/lolP.svg)
 [![arXiv shield](https://img.shields.io/badge/arXiv-1709.01233-red.svg?style=flat)](https://arxiv.org/abs/1709.01233)
 [![PyPI](https://img.shields.io/pypi/v/lolp.svg)](https://pypi.org/project/lolp/)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/lolp.svg)
